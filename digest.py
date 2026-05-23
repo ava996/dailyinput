@@ -11,6 +11,7 @@ AUTH_CODE  = "wewerss2026"
 QQ_EMAIL   = "1441469055@qq.com"
 QQ_AUTH    = os.environ["QQ_AUTH_CODE"]
 CST        = timezone(timedelta(hours=8))
+MODEL      = "deepseek-v4-flash"
 
 client = OpenAI(
     api_key=os.environ["DEEPSEEK_API_KEY"],
@@ -113,7 +114,7 @@ def summarize_article(title, desc):
 资讯类≤80字，深度分析类≤150字。"""
     try:
         r = client.chat.completions.create(
-            model="deepseek-chat",
+            model=MODEL,
             messages=[{"role": "user", "content": prompt}],
             max_tokens=300, temperature=0.3
         )
@@ -147,7 +148,7 @@ def summarize_builder(b):
 用2-3句中文描述最有价值的判断或动作，跳过平淡内容。若内容平淡返回空字符串。"""
     try:
         r = client.chat.completions.create(
-            model="deepseek-chat",
+            model=MODEL,
             messages=[{"role": "user", "content": prompt}],
             max_tokens=150, temperature=0.3
         )
@@ -163,7 +164,7 @@ def summarize_podcast(p):
         return ""
     try:
         r = client.chat.completions.create(
-            model="deepseek-chat",
+            model=MODEL,
             messages=[{"role": "user", "content":
                 f"对以下播客生成中文摘要，150字以内，突出核心论点和关键数据。\n\n{transcript[:3000]}"}],
             max_tokens=250, temperature=0.3
