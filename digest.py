@@ -249,9 +249,15 @@ def main():
         if hours_stale > 3:
             stale_ids.append((fid, name))
     if stale_ids:
-        print(f"触发同步：{len(stale_ids)} 个账号，等待 30 秒...")
-        for fid, name in stale_ids:
-            fetch_rss(fid, force_update=True)
+        print(f"触发同步：{len(stale_ids)} 个账号（每批4个，批次间隔5秒）...")
+        for i in range(0, len(stale_ids), 4):
+            batch = stale_ids[i:i+4]
+            for fid, name in batch:
+                print(f"  同步 {name}")
+                fetch_rss(fid, force_update=True)
+            if i + 4 < len(stale_ids):
+                time.sleep(5)
+        print("同步触发完毕，等待 30 秒让后台完成...")
         time.sleep(30)
 
     # Pass 2：读取最新缓存（不带 update=true）
