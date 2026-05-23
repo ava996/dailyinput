@@ -1,4 +1,4 @@
-import os, smtplib, requests, xml.etree.ElementTree as ET
+import os, time, smtplib, requests, xml.etree.ElementTree as ET
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.utils import parsedate_to_datetime
@@ -242,11 +242,23 @@ def main():
                     for fid, name in accounts]
     cat_articles = {cat: [] for cat in CATEGORIES}
 
+    # Pass 1：对需要更新的账号触发同步（异步，不解析结果）
+    stale_ids = []
+    for fid, name, cat in all_accounts:
+        hours_stale = (now.timestamp() - sync_times.get(fid, 0)) / 3600
+        if hours_stale > 3:
+            stale_ids.append((fid, name))
+    if stale_ids:
+        print(f"触发同步：{len(stale_ids)} 个账号，等待 30 秒...")
+        for fid, name in stale_ids:
+            fetch_rss(fid, force_update=True)
+        time.sleep(30)
+
+    # Pass 2：读取最新缓存（不带 update=true）
     for i in range(0, len(all_accounts), 4):
         for fid, name, cat in all_accounts[i:i+4]:
-            hours_stale = (now.timestamp() - sync_times.get(fid, 0)) / 3600
-            print(f"  拉取 {name}（{'强制同步' if hours_stale > 3 else '读缓存'}）")
-            xml = fetch_rss(fid, hours_stale > 3)
+            print(f"  读取 {name}")
+            xml = fetch_rss(fid, force_update=False)
             articles = parse_rss(xml, name, cutoff)
             for a in articles:
                 a["summary"] = summarize_article(a["title"], a["desc"])
