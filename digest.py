@@ -64,6 +64,29 @@ def fetch_rss(feed_id, force_update):
         print(f"  跳过 {feed_id}：{e}")
         return None
 
+def parse_pubdate(pub_str):
+    """解析 pubDate，支持 RFC 2822 和 ISO 8601 两种格式"""
+    if not pub_str:
+        return None
+    # 尝试 RFC 2822（标准 RSS 格式）
+    try:
+        pub = parsedate_to_datetime(pub_str)
+        if pub.tzinfo is None:
+            pub = pub.replace(tzinfo=timezone.utc)
+        return pub
+    except Exception:
+        pass
+    # 尝试 ISO 8601（部分 RSS 使用）
+    for fmt in ("%Y-%m-%dT%H:%M:%S%z", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d"):
+        try:
+            pub = datetime.strptime(pub_str.strip(), fmt)
+            if pub.tzinfo is None:
+                pub = pub.replace(tzinfo=timezone(timedelta(hours=8)))  # 默认 CST
+            return pub
+        except ValueError:
+            pass
+    return None
+
 def parse_rss(xml_text, account_name, cutoff):
     if not xml_text:
         return []
@@ -73,6 +96,8 @@ def parse_rss(xml_text, account_name, cutoff):
         if channel is None:
             return []
         articles, seen = [], set()
+        total_items = 0
+        skipped_date = 0
         for item in channel.findall("item"):
             title   = (item.findtext("title") or "").strip()
             link    = item.findtext("link") or ""
@@ -81,19 +106,23 @@ def parse_rss(xml_text, account_name, cutoff):
             if not title or title in seen:
                 continue
             seen.add(title)
-            try:
-                pub = parsedate_to_datetime(pub_str)
-                if pub.tzinfo is None:
-                    pub = pub.replace(tzinfo=timezone.utc)
-                if pub < cutoff:
-                    continue
-            except Exception:
+            total_items += 1
+            pub = parse_pubdate(pub_str)
+            if pub is None:
+                print(f"    [{account_name}] 日期解析失败：{pub_str!r}")
+                skipped_date += 1
+                continue
+            if pub < cutoff:
+                skipped_date += 1
                 continue
             articles.append({"title": title, "link": link,
                               "pub": pub, "desc": desc, "account": account_name})
+        if total_items > 0:
+            print(f"    [{account_name}] {total_items} 条 RSS，{len(articles)} 条在时间窗口内，{skipped_date} 条过旧/解析失败")
         articles.sort(key=lambda x: x["pub"], reverse=True)
         return articles[:2]
-    except ET.ParseError:
+    except ET.ParseError as e:
+        print(f"    [{account_name}] XML 解析错误：{e}")
         return []
 
 # ── Step 3：生成摘要 ────────────────────────────────
