@@ -42,7 +42,7 @@ rss:
       max_age_days: 7
     - id: "anthropic"
       name: "Anthropic News"
-      url: "https://www.anthropic.com/news/rss.xml"
+      url: "https://raw.githubusercontent.com/0xSMW/rss-feeds/main/feeds/feed_anthropic_news.xml"
       max_age_days: 7
     - id: "google-ai"
       name: "Google AI Blog"
@@ -50,7 +50,7 @@ rss:
       max_age_days: 7
     - id: "deepmind"
       name: "Google DeepMind Blog"
-      url: "https://deepmind.google/discover/blog/rss.xml"
+      url: "https://deepmind.google/blog/rss.xml"
       max_age_days: 14
     - id: "huggingface"
       name: "Hugging Face Blog"
