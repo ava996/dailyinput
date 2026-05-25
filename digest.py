@@ -118,7 +118,15 @@ def parse_rss(xml_text, account_name, cutoff):
             articles.append({"title": title, "link": link,
                               "pub": pub, "desc": desc, "account": account_name})
         if total_items > 0:
-            print(f"    [{account_name}] {total_items} 条 RSS，{len(articles)} 条在时间窗口内，{skipped_date} 条过旧/解析失败")
+            # 找最新文章的时间，帮助诊断 wewe-rss 同步状态
+            all_pubs = []
+            for item in channel.findall("item"):
+                ps = item.findtext("pubDate") or ""
+                p = parse_pubdate(ps)
+                if p:
+                    all_pubs.append(p)
+            newest = max(all_pubs).astimezone(CST).strftime("%m-%d %H:%M CST") if all_pubs else "未知"
+            print(f"    [{account_name}] {total_items} 条 RSS，最新：{newest}，{len(articles)} 条在窗口内，{skipped_date} 条过旧")
         articles.sort(key=lambda x: x["pub"], reverse=True)
         return articles[:2]
     except ET.ParseError as e:
@@ -254,7 +262,7 @@ def send_email(html, date_str):
 # ── 主流程 ──────────────────────────────────────────
 def main():
     now      = datetime.now(timezone.utc)
-    cutoff   = now - timedelta(hours=30)
+    cutoff   = now - timedelta(hours=72)
     date_str = (now + timedelta(hours=8) - timedelta(days=1)).strftime("%Y-%m-%d")
     print(f"运行日期：{date_str}，截止时间：{cutoff}")
 
