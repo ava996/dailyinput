@@ -1,25 +1,73 @@
-name: Daily Digest
+name: Daily AI Product Radar
 
 on:
   schedule:
-    - cron: '0 0 * * *'   # UTC 00:00 = 北京时间 08:00
-  workflow_dispatch:        # 允许手动点按钮触发
+    - cron: "7 0 * * *"  # UTC 00:07 = Beijing 08:07
+  workflow_dispatch:
+
+concurrency:
+  group: daily-ai-product-radar-${{ github.ref_name }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
 
 jobs:
-  send-digest:
+  send-radar:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
+
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
+      - name: Checkout dailyinput config
+        uses: actions/checkout@v6
         with:
-          python-version: '3.11'
+          path: dailyinput
 
-      - name: 安装依赖
-        run: pip install -r requirements.txt
+      - name: Checkout TrendRadar
+        uses: actions/checkout@v6
+        with:
+          repository: sansan0/TrendRadar
+          ref: master
+          path: TrendRadar
 
-      - name: 运行日报
+      - name: Apply custom config
+        run: |
+          cp dailyinput/config/config.yaml TrendRadar/config/config.yaml
+          cp dailyinput/config/frequency_words.txt TrendRadar/config/frequency_words.txt
+          cp dailyinput/config/ai_interests.txt TrendRadar/config/ai_interests.txt
+          cp dailyinput/config/ai_analysis_prompt.txt TrendRadar/config/ai_analysis_prompt.txt
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Install dependencies
+        working-directory: TrendRadar
+        run: uv sync --frozen --no-dev
+
+      - name: Run TrendRadar
+        working-directory: TrendRadar
         env:
-          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
-          QQ_AUTH_CODE: ${{ secrets.QQ_AUTH_CODE }}
-        run: python digest.py
+          AI_ANALYSIS_ENABLED: "true"
+          AI_API_KEY: ${{ secrets.AI_API_KEY || secrets.DEEPSEEK_API_KEY }}
+          AI_MODEL: "deepseek/deepseek-v4-flash"
+          EMAIL_FROM: "1441469055@qq.com"
+          EMAIL_TO: "1441469055@qq.com"
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD || secrets.QQ_AUTH_CODE }}
+          EMAIL_SMTP_SERVER: "smtp.qq.com"
+          EMAIL_SMTP_PORT: "465"
+          GITHUB_ACTIONS: "true"
+        run: |
+          if [ -z "$AI_API_KEY" ]; then
+            echo "::error::Missing AI_API_KEY or DEEPSEEK_API_KEY secret"
+            exit 1
+          fi
+          if [ -z "$EMAIL_PASSWORD" ]; then
+            echo "::error::Missing EMAIL_PASSWORD or QQ_AUTH_CODE secret"
+            exit 1
+          fi
+          uv run python -m trendradar
