@@ -9,20 +9,14 @@ schedule:
 platforms:
   enabled: true
   sources:
-    - id: "toutiao"
-      name: "今日头条"
     - id: "baidu"
       name: "百度热搜"
     - id: "wallstreetcn-hot"
       name: "华尔街见闻"
-    - id: "thepaper"
-      name: "澎湃新闻"
     - id: "bilibili-hot-search"
       name: "bilibili 热搜"
     - id: "cls-hot"
       name: "财联社热门"
-    - id: "ifeng"
-      name: "凤凰网"
     - id: "weibo"
       name: "微博"
     - id: "douyin"
@@ -34,43 +28,35 @@ rss:
   enabled: true
   freshness_filter:
     enabled: true
-    max_age_days: 3
+    max_age_days: 2
   feeds:
     - id: "openai"
       name: "OpenAI News"
       url: "https://openai.com/news/rss.xml"
-      max_age_days: 7
+      max_age_days: 5
     - id: "anthropic"
       name: "Anthropic News"
       url: "https://raw.githubusercontent.com/0xSMW/rss-feeds/main/feeds/feed_anthropic_news.xml"
-      max_age_days: 7
+      max_age_days: 5
     - id: "google-ai"
       name: "Google AI Blog"
       url: "https://blog.google/technology/ai/rss/"
-      max_age_days: 7
-    - id: "deepmind"
-      name: "Google DeepMind Blog"
-      url: "https://deepmind.google/blog/rss.xml"
-      max_age_days: 14
+      max_age_days: 5
     - id: "huggingface"
       name: "Hugging Face Blog"
       url: "https://huggingface.co/blog/feed.xml"
-      max_age_days: 7
+      max_age_days: 5
     - id: "product-hunt"
       name: "Product Hunt"
       url: "https://www.producthunt.com/feed"
-      max_age_days: 3
-    - id: "ruanyifeng"
-      name: "阮一峰的网络日志"
-      url: "http://www.ruanyifeng.com/blog/atom.xml"
-      max_age_days: 14
+      max_age_days: 2
 
 report:
   mode: "current"
   display_mode: "keyword"
   sort_by_position_first: true
   rank_threshold: 5
-  max_news_per_keyword: 8
+  max_news_per_keyword: 4
 
 filter:
   method: "ai"
@@ -79,7 +65,7 @@ filter:
 ai_filter:
   batch_size: 120
   batch_interval: 2
-  min_score: 0.62
+  min_score: 0.74
   reclassify_threshold: 0.6
   prompt_file: "prompt.txt"
   extract_prompt_file: "extract_prompt.txt"
@@ -89,18 +75,17 @@ display:
   region_order:
     - hotlist
     - rss
-    - standalone
     - ai_analysis
   regions:
     hotlist: true
     new_items: false
     rss: true
-    standalone: true
+    standalone: false
     ai_analysis: true
   standalone:
-    platforms: ["wallstreetcn-hot", "cls-hot"]
+    platforms: []
     rss_feeds: []
-    max_items: 12
+    max_items: 0
 
 notification:
   enabled: true
@@ -159,7 +144,7 @@ ai:
   api_base: ""
   timeout: 120
   temperature: 1.0
-  max_tokens: 5000
+  max_tokens: 3000
   num_retries: 1
   fallback_models: []
 
@@ -168,9 +153,9 @@ ai_analysis:
   language: "Chinese"
   prompt_file: "ai_analysis_prompt.txt"
   mode: "current"
-  max_news_for_analysis: 100
+  max_news_for_analysis: 60
   include_rss: true
-  include_standalone: true
+  include_standalone: false
   include_rank_timeline: false
 
 ai_translation:
