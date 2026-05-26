@@ -9,20 +9,14 @@ schedule:
 platforms:
   enabled: true
   sources:
-    - id: "baidu"
-      name: "百度热搜"
-    - id: "wallstreetcn-hot"
-      name: "华尔街见闻"
-    - id: "bilibili-hot-search"
-      name: "bilibili 热搜"
-    - id: "cls-hot"
-      name: "财联社热门"
-    - id: "weibo"
-      name: "微博"
-    - id: "douyin"
-      name: "抖音"
     - id: "zhihu"
       name: "知乎"
+    - id: "36kr-renqi"
+      name: "36氪人气榜"
+    - id: "wallstreetcn-hot"
+      name: "华尔街见闻"
+    - id: "cls-hot"
+      name: "财联社热门"
 
 rss:
   enabled: true
@@ -50,6 +44,16 @@ rss:
       name: "Product Hunt"
       url: "https://www.producthunt.com/feed"
       max_age_days: 2
+    - id: "huxiu"
+      name: "虎嗅"
+      url: "https://rss.huxiu.com/"
+      max_age_days: 2
+      max_items: 20
+    - id: "builders"
+      name: "AI Builders"
+      url: "http://127.0.0.1:8765/builders.json"
+      max_age_days: 3
+      max_items: 40
 
 report:
   mode: "current"
@@ -65,7 +69,7 @@ filter:
 ai_filter:
   batch_size: 120
   batch_interval: 2
-  min_score: 0.74
+  min_score: 0.70
   reclassify_threshold: 0.6
   prompt_file: "prompt.txt"
   extract_prompt_file: "extract_prompt.txt"
