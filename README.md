@@ -7,13 +7,16 @@ This repository runs a daily TrendRadar-based digest for AI product manager job 
 - Removed the old `wewe-rss` and Railway dependency from the scheduled workflow.
 - Runs TrendRadar once per day at Beijing 08:07 through GitHub Actions.
 - Sends email to `1441469055@qq.com`.
-- Uses AI filtering for:
-  - AI models, agents, product practices
-  - product thinking
-  - content platforms
-  - ecommerce and local life
-  - China finance, banking, macro, and investment news
+- Uses DeepSeek for AI filtering, RSS translation, and daily analysis.
+- Organizes sources around three signal lines:
+  - AI development: official AI feeds, Product Hunt, and AI Builders
+  - product and business judgment: Zhihu, 36Kr, Huxiu, product/platform/business topics
+  - finance and macro: Wallstreetcn and CLS
 - Filters out SaaS, strong hardware technology details, and low-signal entertainment noise.
+
+## Source Shape
+
+TrendRadar directly reads hotlist platforms and RSS feeds. Builders data is generated from `zarazhangrui/follow-builders` JSON snapshots into a local JSON Feed during the GitHub Actions run, then passed to TrendRadar as an RSS-compatible source.
 
 ## Required GitHub Secrets
 
