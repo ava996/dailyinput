@@ -42,6 +42,24 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Build Builders feed
+        run: |
+          python dailyinput/scripts/builders_jsonfeed.py \
+            --output TrendRadar/tmp/builders-feed/builders.json \
+            --max-age-days 3
+          python -m http.server 8765 \
+            --bind 127.0.0.1 \
+            --directory TrendRadar/tmp/builders-feed \
+            > /tmp/builders-feed.log 2>&1 &
+          for i in {1..10}; do
+            if curl -fsS http://127.0.0.1:8765/builders.json >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/builders-feed.log || true
+          exit 1
+
       - name: Install uv
         uses: astral-sh/setup-uv@v7
 
