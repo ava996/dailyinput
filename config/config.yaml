@@ -63,7 +63,7 @@ report:
   max_news_per_keyword: 4
 
 filter:
-  method: "ai"
+  method: "keyword"
   priority_sort_enabled: true
 
 ai_filter:

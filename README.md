@@ -7,7 +7,7 @@ This repository runs a daily TrendRadar-based digest for AI product manager job 
 - Removed the old `wewe-rss` and Railway dependency from the scheduled workflow.
 - Runs TrendRadar once per day at Beijing 08:07 through GitHub Actions.
 - Sends email to `1441469055@qq.com`.
-- Uses DeepSeek for AI filtering, RSS translation, and daily analysis.
+- Uses keyword grouping as the stable primary filter, then uses DeepSeek for RSS translation and daily analysis.
 - Organizes sources around three signal lines:
   - AI development: official AI feeds, Product Hunt, and AI Builders
   - product and business judgment: Zhihu, 36Kr, Huxiu, product/platform/business topics
@@ -31,3 +31,7 @@ Optional newer names are also supported:
 - `EMAIL_PASSWORD`
 
 Email sender and receiver are both configured as `1441469055@qq.com`.
+
+## Filtering Strategy
+
+Keep `filter.method` set to `keyword` for production runs. TrendRadar's `ai` filter is an AI-only gate: if classification returns zero matches, it replaces the keyword result with an empty report and skips email delivery. Keyword filtering keeps the digest stable while DeepSeek still adds analysis and translation after the candidate set is selected.
