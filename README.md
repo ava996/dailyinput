@@ -5,7 +5,7 @@ This repository runs a daily TrendRadar-based digest for AI product manager job 
 ## What Changed
 
 - Removed the old `wewe-rss` and Railway dependency from the scheduled workflow.
-- Runs TrendRadar once per day at Beijing 08:07 through GitHub Actions.
+- Runs TrendRadar once per day at Beijing 08:00 through GitHub Actions.
 - Sends email to `1441469055@qq.com`.
 - Uses keyword grouping as the stable primary filter, then uses DeepSeek for RSS translation and daily analysis.
 - Organizes sources around three signal lines:
