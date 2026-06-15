@@ -2,7 +2,7 @@ name: Daily AI Product Radar
 
 on:
   schedule:
-    - cron: "0 0 * * *"  # UTC 00:00 = Beijing 08:00
+    - cron: "53 23 * * *"  # UTC 23:53 = Beijing 07:53, avoids GitHub's top-of-hour schedule queue
   workflow_dispatch:
 
 concurrency:
