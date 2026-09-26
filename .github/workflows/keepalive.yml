@@ -1,0 +1,53 @@
+name: Repository Keepalive
+
+# GitHub 会在仓库连续 60 天没有任何 push 时，自动停用所有 schedule 触发的 workflow。
+# 这个 workflow 每半月往 .github/keepalive.txt 写一次时间戳并提交，
+# 让仓库的活动窗口永远不会走满 60 天，从而保护 daily-digest.yml 不被停用。
+#
+# 注意：它是自维持的——只要它自己能跑，就不会让仓库进入 60 天空窗。
+
+on:
+  schedule:
+    - cron: "17 3 1,15 * *"  # 每月 1 日和 15 日 UTC 03:17
+  workflow_dispatch:
+
+concurrency:
+  group: repository-keepalive
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          # 优先用 PAT：默认 GITHUB_TOKEN 的提交是否能重置「仓库无活动」计时器存在争议，
+          # 配一个细粒度 PAT（仅本仓库 Contents: Read and write）最稳妥。
+          token: ${{ secrets.KEEPALIVE_PAT || secrets.GITHUB_TOKEN }}
+
+      - name: Stamp keepalive file
+        run: |
+          mkdir -p .github
+          {
+            echo "last keepalive: $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+            echo "purpose: prevent GitHub from disabling scheduled workflows after 60 days of inactivity"
+          } > .github/keepalive.txt
+          cat .github/keepalive.txt
+
+      - name: Commit and push
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/keepalive.txt
+          if git diff --cached --quiet; then
+            echo "nothing to commit, skipping"
+            exit 0
+          fi
+          git commit -m "chore(keepalive): $(date -u +'%Y-%m-%d')"
+          git push
