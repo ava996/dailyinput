@@ -32,7 +32,7 @@ CUDA
 @3
 
 [金融银行与宏观投资]
-/央行|人民银行|金融监管总局|证监会|银行|券商|保险|消费金融|财富管理|数字人民币|金融科技|FinTech|风控|反欺诈|降息|降准|汇率|人民币|A股|港股|美股|国债|货币政策|IPO|并购|财报/i
+/央行|人民银行|货币政策|金融监管总局|证监会|银行|券商|保险|消费金融|财富管理|数字人民币|金融科技|FinTech|风控|反欺诈|降息|降准|LPR|MLF|利率|汇率|人民币|外汇|美联储|A股|港股|美股|债券|国债|收益率|股票|基金|黄金|通胀|CPI|PPI|GDP|财政|税收|减税|赤字|专项债|地方债|IPO|并购|财报|估值|回购/i
 @4
 
 [电商与本地生活]
@@ -44,13 +44,13 @@ CUDA
 @2
 
 [产品思考]
-/产品设计|用户体验|增长|留存|转化|推荐算法|搜索体验|信息流|商业化|会员|订阅|A\/B|用户研究|平台策略|PMF|冷启动|获客|复购|定价/i
-@3
+/产品设计|产品思维|产品应用|产品体验|需求分析|功能设计|用户体验|用户增长|增长|留存|转化|推荐算法|搜索体验|信息流|商业化|变现|营销|会员|订阅|A\/B|用户研究|用户画像|平台策略|PMF|冷启动|获客|复购|定价|交互|原型|竞品|B端|C端|短剧|出海|App/i
+@2
 
 [AI 工具与效率]
-/AI工具|AI产品|生产力|效率工具|自动化|知识管理|独立开发|Notion|Obsidian|Figma|Copilot/i
-@3
+/AI工具|AI产品|生产力|效率工具|自动化|知识管理|独立开发|开源|Notion|Obsidian|Figma|Copilot/i
+@2
 
 [AI 模型与 Agent]
-/AI Agent|Agent|智能体|大模型|OpenAI|ChatGPT|Claude|Anthropic|Gemini|DeepSeek|Qwen|通义|豆包|Kimi|MiniMax|GLM|月之暗面|智谱|Sora|Cursor|Claude Code|Codex|Manus|Coze|Dify|RAG|MCP|AI搜索|AI编程|推理模型|模型评测/i
-@7
+/AI\b|AI营销|AI时代|AI应用|AI硬件|AIGC|AI Agent|Agent|智能体|大模型|世界模型|元宝|OpenAI|ChatGPT|Claude|Anthropic|Gemini|DeepSeek|Qwen|通义|豆包|Kimi|MiniMax|GLM|月之暗面|智谱|Sora|Cursor|Claude Code|Codex|Manus|Coze|Dify|RAG|MCP|AI搜索|AI编程|推理模型|模型评测|GitHub/i
+@4

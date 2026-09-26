@@ -23,25 +23,31 @@ TrendRadar directly reads hotlist platforms and RSS feeds. Builders data is gene
 | id | name | why |
 |---|---|---|
 | `zhihu` | 知乎 | 互联网 / 产品讨论 |
+| `github-trending-today` | GitHub Trending | 开源与 AI 工具风向 |
 | `wallstreetcn-hot` | 华尔街见闻 | 金融宏观 |
 | `cls-hot` | 财联社热门 | 投资快讯 |
-| `github-trending-today` | GitHub Trending | 开源与 AI 工具风向 |
+| `cls-depth` | 财联社深度 | 深度报道 |
+| `fastbull-news` | 法布财经解读 | 财经分析方法论 |
+
+`fastbull-news` is the useful one for understanding rather than just knowing: its items are explainers such as "股票回购如何影响每股收益：增厚不等于创造价值", "债券到期收益率不等于实际年化回报", "DV01怎么算？把债券久期换成每个基点的盈亏". Note its links live on `fastbull.com`, not `.cn` — `expected_domain` must match or TrendRadar silently discards the whole platform.
 
 Removed: `36kr-renqi` and `36kr` (the upstream NewsNow API answers `Invalid source id` for both), plus `sspai` and `jin10` (cut for volume; Jin10 overlapped with Wallstreetcn and CLS).
 
 ### RSS feeds (`config.yaml` → `rss.feeds`)
 
-OpenAI official site: OpenAI News, OpenAI Research.
+OpenAI official site: OpenAI News, OpenAI Research, OpenAI Alignment.
 
 Anthropic official site: Anthropic News, Anthropic Research.
 
 Other AI and product: Google AI Blog, Product Hunt, AI Builders.
 
-Chinese: 量子位 (`qbitai.com/feed`), InfoQ 中文 (`infoq.cn/feed`).
+Chinese: 量子位 (`qbitai.com/feed`), 人人都是产品经理 (`woshipm.com/feed`), InfoQ 中文 (`infoq.cn/feed`).
 
 English first-hand: TechCrunch AI, Lenny's Newsletter, Latent Space, Hacker News.
 
-Removed for volume: `rss.huxiu.com` (returns an empty RSS channel with zero items), OpenAI Alignment, Anthropic Red Team, 极客公园, 钛媒体, Interconnects, Hugging Face Blog. All are one-line additions if you want them back.
+Chinese finance RSS was tried and abandoned — 第一财经, 财新, 经济观察, 21财经, 证券时报, 中国证券报, 界面, 东方财富 and 智通财经 all return 403/404/500 or an empty feed. Policy and macro coverage therefore comes from the hotlist platforms above, which are the ones actually carrying interpretation rather than raw wire copy.
+
+Removed for volume: `rss.huxiu.com` (returns an empty RSS channel with zero items), Anthropic Red Team, 极客公园, 钛媒体, Interconnects, Hugging Face Blog. All are one-line additions if you want them back.
 
 ### Official site sections
 
@@ -64,7 +70,9 @@ This is the part that is easy to get wrong, so it is worth writing down.
 
 **The first matching group wins.** `count_rss_frequency` breaks out of the group loop as soon as one group matches. A broad group placed first therefore swallows everything and the groups after it never fill. That is why the order below goes specific → generic, with the catch-all AI group last.
 
-Current caps:
+**The hotlist and RSS caps are applied independently.** `count_frequency` and `count_rss_frequency` each enforce `@N` on their own side, so a group can occupy up to `2 × @N` slots in the finished email. Size the caps at roughly half the per-group total you actually want.
+
+Current caps, chosen so the whole digest lands at 15–20 items:
 
 | Group | `@N` |
 |---|---|
@@ -72,15 +80,15 @@ Current caps:
 | 金融银行与宏观投资 | 4 |
 | 电商与本地生活 | 2 |
 | 内容平台 | 2 |
-| 产品思考 | 3 |
-| AI 工具与效率 | 3 |
-| AI 模型与 Agent (catch-all, last) | 7 |
+| 产品思考 | 2 |
+| AI 工具与效率 | 2 |
+| AI 模型与 Agent (catch-all, last) | 4 |
 
-**Do not size the digest from the Actions log.** The log line `[推送] 准备发送：热榜 N 条 + RSS M 条` mixes two different counters: the hotlist number is `sum(len(stat["titles"]))`, which is already capped, while the RSS number is `sum(stat["count"])`, which is the raw pre-cap match count. The RSS figure is therefore inflated — a run reporting "RSS 79 条" rendered only about 14 entries.
+**Do not size the digest from the Actions log.** The log line `[推送] 准备发送：热榜 N 条 + RSS M 条` mixes two different counters: the hotlist number is `sum(len(stat["titles"]))`, which is already capped, while the RSS number is `sum(stat["count"])`, which is the raw pre-cap match count. The RSS figure is therefore inflated several-fold — a run reporting "RSS 38 条" renders about 10 entries.
 
-To check the real volume without sending an email every time, replicate the matching locally: filter each feed by its `max_age_days`, apply `[GLOBAL_FILTER]`, assign each title to its first matching group, then apply the `@N` caps.
+To check the real volume without sending an email every time, replicate the matching locally: filter each feed by its `max_age_days`, apply `[GLOBAL_FILTER]`, assign each title to its first matching group, then apply the `@N` caps. Cross-check the hotlist figure against the log, which is accurate on that side.
 
-Measured with that method on 2026-09-27: **16 items** (6 hotlist + 10 RSS), down from roughly 30 before the caps were tightened.
+Measured with that method on 2026-09-27: **18 items** (8 hotlist + 10 RSS).
 
 ## Required GitHub Secrets
 

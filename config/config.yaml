@@ -9,18 +9,26 @@ schedule:
 platforms:
   enabled: true
   sources:
+    # ---- 产品 / 技术 ----
     - id: "zhihu"
       name: "知乎"
       expected_domain: "zhihu.com"
+    - id: "github-trending-today"
+      name: "GitHub Trending"
+      expected_domain: "github.com"
+    # ---- 金融 / 宏观 / 政策（带解读）----
     - id: "wallstreetcn-hot"
       name: "华尔街见闻"
       expected_domain: "wallstreetcn.com"
     - id: "cls-hot"
       name: "财联社热门"
       expected_domain: "cls.cn"
-    - id: "github-trending-today"
-      name: "GitHub Trending"
-      expected_domain: "github.com"
+    - id: "cls-depth"
+      name: "财联社深度"
+      expected_domain: "cls.cn"
+    - id: "fastbull-news"
+      name: "法布财经解读"
+      expected_domain: "fastbull.com"
 
 rss:
   enabled: true
@@ -36,6 +44,10 @@ rss:
     - id: "openai-research"
       name: "OpenAI Research"
       url: "https://raw.githubusercontent.com/0xSMW/rss-feeds/main/feeds/feed_openai_research.xml"
+      max_age_days: 14
+    - id: "openai-alignment"
+      name: "OpenAI Alignment"
+      url: "https://raw.githubusercontent.com/0xSMW/rss-feeds/main/feeds/feed_openai_alignment.xml"
       max_age_days: 14
 
     # ---- Anthropic 官网 ----
@@ -63,11 +75,15 @@ rss:
       max_age_days: 3
       max_items: 40
 
-    # ---- 中文 AI 与产品判断 ----
+    # ---- 中文 AI / 产品 / 商业 ----
     - id: "qbitai"
       name: "量子位"
       url: "https://www.qbitai.com/feed"
       max_age_days: 3
+    - id: "woshipm"
+      name: "人人都是产品经理"
+      url: "https://www.woshipm.com/feed"
+      max_age_days: 4
     - id: "infoq-cn"
       name: "InfoQ 中文"
       url: "https://www.infoq.cn/feed"
