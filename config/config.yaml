@@ -21,12 +21,6 @@ platforms:
     - id: "github-trending-today"
       name: "GitHub Trending"
       expected_domain: "github.com"
-    - id: "sspai"
-      name: "少数派"
-      expected_domain: "sspai.com"
-    - id: "jin10"
-      name: "金十数据"
-      expected_domain: "jin10.com"
 
 rss:
   enabled: true
@@ -34,7 +28,7 @@ rss:
     enabled: true
     max_age_days: 2
   feeds:
-    # ---- OpenAI 官网：新闻 / 研究 / 对齐 ----
+    # ---- OpenAI 官网 ----
     - id: "openai"
       name: "OpenAI News"
       url: "https://openai.com/news/rss.xml"
@@ -43,12 +37,8 @@ rss:
       name: "OpenAI Research"
       url: "https://raw.githubusercontent.com/0xSMW/rss-feeds/main/feeds/feed_openai_research.xml"
       max_age_days: 14
-    - id: "openai-alignment"
-      name: "OpenAI Alignment"
-      url: "https://raw.githubusercontent.com/0xSMW/rss-feeds/main/feeds/feed_openai_alignment.xml"
-      max_age_days: 14
 
-    # ---- Anthropic 官网：新闻 / 研究 / 安全（红队）----
+    # ---- Anthropic 官网 ----
     - id: "anthropic"
       name: "Anthropic News"
       url: "https://raw.githubusercontent.com/0xSMW/rss-feeds/main/feeds/feed_anthropic_news.xml"
@@ -57,19 +47,11 @@ rss:
       name: "Anthropic Research"
       url: "https://raw.githubusercontent.com/0xSMW/rss-feeds/main/feeds/feed_anthropic_research.xml"
       max_age_days: 14
-    - id: "anthropic-red"
-      name: "Anthropic Red Team"
-      url: "https://raw.githubusercontent.com/0xSMW/rss-feeds/main/feeds/feed_anthropic_red.xml"
-      max_age_days: 14
 
     # ---- 其他 AI 官方与产品线 ----
     - id: "google-ai"
       name: "Google AI Blog"
       url: "https://blog.google/technology/ai/rss/"
-      max_age_days: 5
-    - id: "huggingface"
-      name: "Hugging Face Blog"
-      url: "https://huggingface.co/blog/feed.xml"
       max_age_days: 5
     - id: "product-hunt"
       name: "Product Hunt"
@@ -81,25 +63,17 @@ rss:
       max_age_days: 3
       max_items: 40
 
-    # ---- 中文 AI 与产品判断（新增）----
+    # ---- 中文 AI 与产品判断 ----
     - id: "qbitai"
       name: "量子位"
       url: "https://www.qbitai.com/feed"
       max_age_days: 3
-    - id: "geekpark"
-      name: "极客公园"
-      url: "https://www.geekpark.net/rss"
-      max_age_days: 4
     - id: "infoq-cn"
       name: "InfoQ 中文"
       url: "https://www.infoq.cn/feed"
       max_age_days: 3
-    - id: "tmtpost"
-      name: "钛媒体"
-      url: "https://www.tmtpost.com/rss"
-      max_age_days: 3
 
-    # ---- 英文一手源（新增）----
+    # ---- 英文一手源 ----
     - id: "techcrunch-ai"
       name: "TechCrunch AI"
       url: "https://techcrunch.com/category/artificial-intelligence/feed/"
@@ -112,10 +86,6 @@ rss:
       name: "Latent Space"
       url: "https://www.latent.space/feed"
       max_age_days: 10
-    - id: "interconnects"
-      name: "Interconnects"
-      url: "https://www.interconnects.ai/feed"
-      max_age_days: 10
     - id: "hacker-news"
       name: "Hacker News"
       url: "https://hnrss.org/frontpage"
@@ -126,7 +96,7 @@ report:
   display_mode: "keyword"
   sort_by_position_first: true
   rank_threshold: 5
-  max_news_per_keyword: 4
+  max_news_per_keyword: 3
 
 filter:
   method: "keyword"
@@ -223,7 +193,7 @@ ai_analysis:
   language: "Chinese"
   prompt_file: "ai_analysis_prompt.txt"
   mode: "current"
-  max_news_for_analysis: 80
+  max_news_for_analysis: 40
   include_rss: true
   include_standalone: false
   include_rank_timeline: false

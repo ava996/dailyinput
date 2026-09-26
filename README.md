@@ -10,8 +10,8 @@ This repository runs a daily TrendRadar-based digest for AI product manager job 
 - Uses keyword grouping as the stable primary filter, then uses DeepSeek for RSS translation and daily analysis.
 - Organizes sources around three signal lines:
   - AI development: official AI feeds, Chinese AI media, Product Hunt, and AI Builders
-  - product and business judgment: Zhihu, SSPAI, GeekPark, TMTPost, InfoQ, TechCrunch AI, Lenny's Newsletter, Latent Space, Interconnects
-  - finance and macro: Wallstreetcn, CLS, Jin10
+  - product and business judgment: Zhihu, InfoQ 中文, TechCrunch AI, Lenny's Newsletter, Latent Space
+  - finance and macro: Wallstreetcn, CLS
 - Filters out SaaS, strong hardware technology details, and low-signal entertainment noise.
 
 ## Source Shape
@@ -26,24 +26,22 @@ TrendRadar directly reads hotlist platforms and RSS feeds. Builders data is gene
 | `wallstreetcn-hot` | 华尔街见闻 | 金融宏观 |
 | `cls-hot` | 财联社热门 | 投资快讯 |
 | `github-trending-today` | GitHub Trending | 开源与 AI 工具风向 |
-| `sspai` | 少数派 | 效率工具与产品体验 |
-| `jin10` | 金十数据 | 宏观快讯 |
 
-`36kr-renqi` and `36kr` were removed on 2026-09-27: the upstream NewsNow API now answers `Invalid source id` for both.
+Removed: `36kr-renqi` and `36kr` (the upstream NewsNow API answers `Invalid source id` for both), plus `sspai` and `jin10` (cut for volume; Jin10 overlapped with Wallstreetcn and CLS).
 
 ### RSS feeds (`config.yaml` → `rss.feeds`)
 
-OpenAI official site: OpenAI News (`openai.com/news/rss.xml`), OpenAI Research, OpenAI Alignment.
+OpenAI official site: OpenAI News, OpenAI Research.
 
-Anthropic official site: Anthropic News, Anthropic Research, Anthropic Red Team.
+Anthropic official site: Anthropic News, Anthropic Research.
 
-Other AI and product: Google AI Blog, Hugging Face Blog, Product Hunt, AI Builders.
+Other AI and product: Google AI Blog, Product Hunt, AI Builders.
 
-Chinese AI and product: 量子位 (`qbitai.com/feed`), 极客公园 (`geekpark.net/rss`), InfoQ 中文 (`infoq.cn/feed`), 钛媒体 (`tmtpost.com/rss`).
+Chinese: 量子位 (`qbitai.com/feed`), InfoQ 中文 (`infoq.cn/feed`).
 
-English first-hand: TechCrunch AI, Lenny's Newsletter, Latent Space, Interconnects, Hacker News.
+English first-hand: TechCrunch AI, Lenny's Newsletter, Latent Space, Hacker News.
 
-`rss.huxiu.com` was removed on 2026-09-27: it returns an empty RSS channel with zero items.
+Removed for volume: `rss.huxiu.com` (returns an empty RSS channel with zero items), OpenAI Alignment, Anthropic Red Team, 极客公园, 钛媒体, Interconnects, Hugging Face Blog. All are one-line additions if you want them back.
 
 ### Official site sections
 
@@ -54,15 +52,35 @@ The research feeds come from [0xSMW/rss-feeds](https://github.com/0xSMW/rss-feed
 | Section | URL | Cadence |
 |---|---|---|
 | Anthropic Research | `feeds/feed_anthropic_research.xml` | ~1 per 6 days |
-| Anthropic Red Team | `feeds/feed_anthropic_red.xml` | ~1 per 2 weeks |
 | OpenAI Research | `feeds/feed_openai_research.xml` | ~1 per 6 days |
-| OpenAI Alignment | `feeds/feed_openai_alignment.xml` | ~1 per 2 weeks |
 
-### Freshness windows
+These publish irregularly, so they use `max_age_days: 14` instead of the 2-day global window. Weekly sources (Lenny's, Latent Space) use `max_age_days: 10`.
 
-These sections publish irregularly, so they use `max_age_days: 14` instead of the 2-day global window. Weekly sources (Lenny's, Latent Space, Interconnects) use `max_age_days: 10`.
+## How The Digest Length Is Controlled
 
-Trade-off to be aware of: `report.mode` is `current`, which re-pushes every matching item that is still inside its freshness window. A wide window therefore means the same research post can appear in several consecutive digests. Widen it if you want recall, narrow it if you want each item to appear only once.
+This is the part that is easy to get wrong, so it is worth writing down.
+
+**`@N` in `frequency_words.txt` is the maximum number of items shown per group, not a weight.** TrendRadar's parser (`trendradar/core/frequency.py`) documents it as `@数字：该词组最多显示的条数`. `report.max_news_per_keyword` is only the global fallback used when a group has no `@N`.
+
+**The first matching group wins.** `count_rss_frequency` breaks out of the group loop as soon as one group matches. A broad group placed first therefore swallows everything and the groups after it never fill. That is why the order below goes specific → generic, with the catch-all AI group last.
+
+Current caps:
+
+| Group | `@N` |
+|---|---|
+| 求职与职业机会 | 3 |
+| 金融银行与宏观投资 | 4 |
+| 电商与本地生活 | 2 |
+| 内容平台 | 2 |
+| 产品思考 | 3 |
+| AI 工具与效率 | 3 |
+| AI 模型与 Agent (catch-all, last) | 7 |
+
+**Do not size the digest from the Actions log.** The log line `[推送] 准备发送：热榜 N 条 + RSS M 条` mixes two different counters: the hotlist number is `sum(len(stat["titles"]))`, which is already capped, while the RSS number is `sum(stat["count"])`, which is the raw pre-cap match count. The RSS figure is therefore inflated — a run reporting "RSS 79 条" rendered only about 14 entries.
+
+To check the real volume without sending an email every time, replicate the matching locally: filter each feed by its `max_age_days`, apply `[GLOBAL_FILTER]`, assign each title to its first matching group, then apply the `@N` caps.
+
+Measured with that method on 2026-09-27: **16 items** (6 hotlist + 10 RSS), down from roughly 30 before the caps were tightened.
 
 ## Required GitHub Secrets
 
