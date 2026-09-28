@@ -4,6 +4,17 @@ on:
   schedule:
     - cron: "53 23 * * *"  # UTC 23:53 = Beijing 07:53, avoids GitHub's top-of-hour schedule queue
   workflow_dispatch:
+    inputs:
+      send_email:
+        description: "Send this run by email (off generates a preview only)"
+        type: boolean
+        default: false
+  push:
+    paths:
+      - 'config/**'
+      - 'scripts/**'
+      - 'tests/**'
+      - '.github/workflows/daily-digest.yml'
 
 concurrency:
   group: daily-ai-product-radar-${{ github.ref_name }}
@@ -27,7 +38,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           repository: sansan0/TrendRadar
-          ref: master
+          ref: 792bcc3928b1617bba09df34989fd5675c159b86
           path: TrendRadar
 
       - name: Apply custom config
@@ -36,6 +47,7 @@ jobs:
           cp dailyinput/config/frequency_words.txt TrendRadar/config/frequency_words.txt
           cp dailyinput/config/ai_interests.txt TrendRadar/config/ai_interests.txt
           cp dailyinput/config/ai_analysis_prompt.txt TrendRadar/config/ai_analysis_prompt.txt
+          python dailyinput/scripts/apply_topic_patch.py TrendRadar
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -67,6 +79,12 @@ jobs:
         working-directory: TrendRadar
         run: uv sync --frozen --no-dev
 
+      - name: Test unified topic selection and rendering
+        working-directory: dailyinput
+        env:
+          TRENDRADAR_ROOT: ${{ github.workspace }}/TrendRadar
+        run: ../TrendRadar/.venv/bin/python -m unittest discover -s tests -v
+
       - name: Run TrendRadar
         working-directory: TrendRadar
         env:
@@ -79,13 +97,34 @@ jobs:
           EMAIL_SMTP_SERVER: "smtp.qq.com"
           EMAIL_SMTP_PORT: "465"
           GITHUB_ACTIONS: "true"
+          SEND_EMAIL: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.send_email) }}
         run: |
           if [ -z "$AI_API_KEY" ]; then
             echo "::error::Missing AI_API_KEY or DEEPSEEK_API_KEY secret"
             exit 1
           fi
-          if [ -z "$EMAIL_PASSWORD" ]; then
+          if [ "$SEND_EMAIL" = "true" ] && [ -z "$EMAIL_PASSWORD" ]; then
             echo "::error::Missing EMAIL_PASSWORD or QQ_AUTH_CODE secret"
             exit 1
           fi
+          uv run python - <<'PY'
+          import os
+          from pathlib import Path
+          import yaml
+          path = Path("config/config.yaml")
+          config = yaml.safe_load(path.read_text())
+          config["notification"]["enabled"] = os.environ["SEND_EMAIL"] == "true"
+          path.write_text(yaml.safe_dump(config, allow_unicode=True, sort_keys=False))
+          PY
           uv run python -m trendradar
+
+      - name: Upload digest preview and selection audit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dailyinput-preview-${{ github.run_id }}
+          path: |
+            TrendRadar/output/html/latest/current.html
+            TrendRadar/output/topic-selection.json
+          retention-days: 7
+          if-no-files-found: warn

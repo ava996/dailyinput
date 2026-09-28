@@ -1,134 +1,64 @@
-# Daily AI Product Radar
+# Daily Input · 主题日报
 
-This repository runs a daily TrendRadar-based digest for AI product manager job preparation.
+服务于 AI 产品经理学习、求职与行业判断。GitHub Actions 每天北京时间 07:53 排队运行，实际开始时间可能延后。API、RSS 和 Builders 统一按主题筛选、去重、翻译和分析，再发送邮件。
 
-## What Changed
+## 主题与阅读量
 
-- Removed the old `wewe-rss` and Railway dependency from the scheduled workflow.
-- Runs TrendRadar once per day near Beijing 08:00 through GitHub Actions. The cron is set to Beijing 07:53 to avoid GitHub's top-of-hour schedule queue.
-- Sends email to `1441469055@qq.com`.
-- Uses keyword grouping as the stable primary filter, then uses DeepSeek for RSS translation and daily analysis.
-- Organizes sources around three signal lines:
-  - AI development: official AI feeds, Chinese AI media, Product Hunt, and AI Builders
-  - product and business judgment: Zhihu, InfoQ 中文, TechCrunch AI, Lenny's Newsletter, Latent Space
-  - finance and macro: Wallstreetcn, CLS
-- Filters out SaaS, strong hardware technology details, and low-signal entertainment noise.
+| 主题 | 每日上限 | 入选依据 |
+|---|---:|---|
+| AI 模型与 Agent | 4 | 模型能力、Agent、多模态、API、评测与官方研究 |
+| AI 工具与效率 | 3 | AI 编程、办公、知识管理、提示词与可复用工作流 |
+| 产品思考 | 4 | 用户研究、需求验证、体验设计、实验、激活与留存 |
+| 内容平台 | 2 | 内容平台动作、创作者生态、推荐与社区治理 |
+| 电商与本地生活 | 2 | 电商、即时零售、外卖、团购与平台变化 |
+| 宏观政策与传导 | 3 | 货币财政政策、利率汇率、通胀和经济传导 |
+| 金融与投资 | 2 | 金融监管、银行、市场、财报与估值 |
+| 求职与职业机会 | 2 | 明确的招聘、岗位、面试、实习与职业发展 |
 
-## Source Shape
+最多 22 条；没有合格内容的主题不凑数。每个主题同一来源最多 2 条，轮流从不同来源选取。AI 官方源、产品方法论来源优先。限额在所有渠道合并后执行。
 
-TrendRadar directly reads hotlist platforms and RSS feeds. Builders data is generated from `zarazhangrui/follow-builders` JSON snapshots into a local JSON Feed during the GitHub Actions run, then passed to TrendRadar as an RSS-compatible source.
+“增长、转化、会员、订阅、定价、App、产品经理”不再单独触发产品分类。“产品经理如何设计可用性测试”属于产品思考；“AI 产品经理秋招岗位”才属于求职。华尔街见闻和财联社只参与宏观、金融主题，不占产品和 AI 的名额；这意味着它们的纯 AI 发布稿会被略过，由 AI 专门来源提供覆盖。
 
-### Hotlist platforms (`config.yaml` → `platforms.sources`)
+## 来源
 
-| id | name | why |
-|---|---|---|
-| `zhihu` | 知乎 | 互联网 / 产品讨论 |
-| `github-trending-today` | GitHub Trending | 开源与 AI 工具风向 |
-| `wallstreetcn-news` | 华尔街见闻文章 | 宏观与市场分析文章流 |
-| `cls-hot` | 财联社热门 | 当日热点 |
-| `cls-depth` | 财联社深度 | 深度分析与解读 |
-| `cls-telegraph` | 财联社电报 | 快讯 + 券商机构观点 |
+来源在 `config/config.yaml` 中维护。传输方式仅用于抓取，不决定邮件栏目。
 
-The finance and policy slots deliberately favour sources that carry **analysis**, not wire copy or ranking lists:
+- AI：OpenAI News/Research/Alignment、Anthropic News/Research、Google AI、量子位、TechCrunch AI、Latent Space。
+- 产品与实践：人人都是产品经理、Lenny’s Newsletter、Product Hunt、AI Builders；知乎、GitHub Trending、InfoQ 中文、Hacker News 提供补充候选，必须通过主题规则。
+- 宏观金融：华尔街见闻文章、财联社深度。移除财联社热门和电报，减少重复快讯与市场噪声。
 
-- `wallstreetcn-news` is the article stream (not the `-hot` ranking). Sample titles: "高盛警告：美股广度创2000年互联网泡沫来最差，债波动率罕见背离", "动力煤重回千元！最差的盈利环境，为什么可能对应火电最好的拐点？"
-- `cls-depth` runs explainers: "特朗普为何反对'AI减速'？", "AI狂欢尚未结束？真正的危险时刻，将是这个词'火了'后……"
-- `cls-telegraph` adds sell-side views on policy transmission: "摩根大通：预计泰国央行明年将加息三次", "花旗银行分析师表示，过去一个月美债短端利率重新定价幅度达到90年代以来高位".
+OpenAI/Anthropic 的部分分栏来自第三方 `0xSMW/rss-feeds` 镜像，原文章链接仍指向发布网站。Builders 来自 `zarazhangrui/follow-builders`，在 Actions 中转换为本地 JSON Feed。
 
-Note their links live on `wallstreetcn.com` and `cls.cn`; `expected_domain` must match or TrendRadar silently discards the whole platform.
+保留来源各自的时间窗：一般 2–5 天，周更 10 天，研究分栏 14 天。Builders 仅接受有效且近期的发布时间，缺失、无效或明显未来日期不再当作新内容；作者简介不参与内容。
 
-Tried and rejected: `fastbull-news`. It carries mechanical explainers ("DV01怎么算？") rather than macro transmission analysis, which is not what this digest is for.
+## 筛选与展示实现
 
-Removed: `36kr-renqi` and `36kr` (the upstream NewsNow API answers `Invalid source id` for both), plus `sspai`, `jin10` and `wallstreetcn-hot` (volume, and `wallstreetcn-news` supersedes the ranking view).
+1. TrendRadar 抓取并执行 RSS 新鲜度过滤。
+2. `config/frequency_words.txt` 只做无上限的候选收集；不要在此添加 `@N`，避免在合并前截掉内容。
+3. `scripts/topic_digest.py` 用同一套中英文标题规则为每篇确定一个主题，按 URL（忽略追踪参数）或规范化标题去重，然后执行主题配额。只匹配标题，不能保证识别含义相同但标题和链接都不同的报道。
+4. 同一份入选列表进入 AI 分析和翻译，再生成邮件 HTML。来源和原文链接保留在文章下方；没有 RSS 订阅更新或 RSS 深度洞察专栏。
 
-### RSS feeds (`config.yaml` → `rss.feeds`)
+`filter.method: keyword` 是上游的兼容入口；实际主题规则在 Python 模块中。`ai_interests.txt` 只记录编辑偏好，不是线上分类开关。`display.regions.rss: true` 必须保留以获取候选；`region_order` 不包含 rss，且合并后已清空独立 RSS 列表。英文标题通过统一列表的 hotlist 翻译路径翻译。
 
-OpenAI official site: OpenAI News, OpenAI Research, OpenAI Alignment.
+上游固定为 TrendRadar `792bcc3928b1617bba09df34989fd5675c159b86`。`scripts/apply_topic_patch.py` 在 AI 分析之前接入合并步骤，并保留 source_id。补丁检查代码位置并支持重复应用；升级上游需重新通过集成测试，不能直接改回浮动 master。
 
-Anthropic official site: Anthropic News, Anthropic Research.
+## Actions 与预览
 
-Other AI and product: Google AI Blog, Product Hunt, AI Builders.
+- `schedule`：正常发送每日邮件。
+- `push`（配置、脚本、测试或工作流变化）：测试并生成真实预览，不发送邮件。
+- `workflow_dispatch`：默认只生成预览；需要发送时显式勾选 `send_email`。
+- 运行产物 `dailyinput-preview-<run_id>` 保存 `current.html` 和 `topic-selection.json` 7 天。审计文件含真实入选数、每篇主题、来源、URL 及候选列表。
 
-Chinese: 量子位 (`qbitai.com/feed`), 人人都是产品经理 (`woshipm.com/feed`), InfoQ 中文 (`infoq.cn/feed`).
+必需 Secrets：`DEEPSEEK_API_KEY` 或 `AI_API_KEY`。邮件发送另需 `QQ_AUTH_CODE` 或 `EMAIL_PASSWORD`，发送与接收地址保持现有配置。
 
-English first-hand: TechCrunch AI, Lenny's Newsletter, Latent Space, Hacker News.
+## 验证
 
-Chinese finance RSS was tried and abandoned — 第一财经, 财新, 经济观察, 21财经, 证券时报, 中国证券报, 界面, 东方财富 and 智通财经 all return 403/404/500 or an empty feed. Policy and macro coverage therefore comes from the hotlist platforms above, which are the ones actually carrying interpretation rather than raw wire copy.
+```sh
+python -m unittest discover -s tests -v
+python scripts/apply_topic_patch.py /path/to/TrendRadar
+TRENDRADAR_ROOT=/path/to/TrendRadar /path/to/TrendRadar/.venv/bin/python -m unittest discover -s tests -v
+```
 
-Removed for volume: `rss.huxiu.com` (returns an empty RSS channel with zero items), Anthropic Red Team, 极客公园, 钛媒体, Interconnects, Hugging Face Blog. All are one-line additions if you want them back.
+第一条只跑独立规则测试；集成测试需要已经安装依赖并应用补丁的固定版本 TrendRadar。Actions 会执行完整测试，覆盖真实上游候选结构、分类、配额、去重、RSS-only、API-only 和最终 HTML。
 
-### Official site sections
-
-Neither OpenAI nor Anthropic publishes an official RSS feed for its research sections — `openai.com/research/rss.xml`, `www.anthropic.com/rss.xml`, `www.anthropic.com/research/rss.xml` and `www.anthropic.com/news/rss.xml` all return 404. Only `openai.com/news/rss.xml` is a real feed (`Content-Type: text/xml`, channel title `OpenAI News`).
-
-The research feeds come from [0xSMW/rss-feeds](https://github.com/0xSMW/rss-feeds), which scrapes each site section and republishes it as RSS on a schedule:
-
-| Section | URL | Cadence |
-|---|---|---|
-| Anthropic Research | `feeds/feed_anthropic_research.xml` | ~1 per 6 days |
-| OpenAI Research | `feeds/feed_openai_research.xml` | ~1 per 6 days |
-
-These publish irregularly, so they use `max_age_days: 14` instead of the 2-day global window. Weekly sources (Lenny's, Latent Space) use `max_age_days: 10`.
-
-## How The Digest Length Is Controlled
-
-This is the part that is easy to get wrong, so it is worth writing down.
-
-**`@N` in `frequency_words.txt` is the maximum number of items shown per group, not a weight.** TrendRadar's parser (`trendradar/core/frequency.py`) documents it as `@数字：该词组最多显示的条数`. `report.max_news_per_keyword` is only the global fallback used when a group has no `@N`.
-
-**The first matching group wins.** `count_rss_frequency` breaks out of the group loop as soon as one group matches. A broad group placed first therefore swallows everything and the groups after it never fill. That is why the order below goes specific → generic, with the catch-all AI group last.
-
-**The hotlist and RSS caps are applied independently.** `count_frequency` and `count_rss_frequency` each enforce `@N` on their own side, so a group can occupy up to `2 × @N` slots in the finished email. Size the caps at roughly half the per-group total you actually want.
-
-Current caps, chosen so the whole digest lands at 15–20 items:
-
-| Group | `@N` |
-|---|---|
-| 求职与职业机会 | 2 |
-| 宏观政策与传导 | 3 |
-| 金融与投资 | 2 |
-| 电商与本地生活 | 1 |
-| 内容平台 | 1 |
-| 产品思考 | 2 |
-| AI 工具与效率 | 1 |
-| AI 模型与 Agent (catch-all, last) | 3 |
-
-`宏观政策与传导` sits second in the list on purpose. Because the first matching group wins, placing it ahead of `金融与投资` means a story like "央行降准利好银行股" is filed as macro policy rather than as a stock item, and it gets its own dedicated slots instead of competing with individual-stock chatter.
-
-**Do not size the digest from the Actions log.** The log line `[推送] 准备发送：热榜 N 条 + RSS M 条` mixes two different counters: the hotlist number is `sum(len(stat["titles"]))`, which is already capped, while the RSS number is `sum(stat["count"])`, which is the raw pre-cap match count. The RSS figure is therefore inflated several-fold — a run reporting "RSS 38 条" renders about 10 entries.
-
-To check the real volume without sending an email every time, replicate the matching locally: filter each feed by its `max_age_days`, apply `[GLOBAL_FILTER]`, assign each title to its first matching group, then apply the `@N` caps. Cross-check the hotlist figure against the log, which is accurate on that side.
-
-Measured with that method on 2026-09-28: **20 items** (11 hotlist + 9 RSS).
-
-## Required GitHub Secrets
-
-- `DEEPSEEK_API_KEY` (or `AI_API_KEY`)
-- `QQ_AUTH_CODE` (or `EMAIL_PASSWORD`)
-- `KEEPALIVE_PAT` (optional but recommended — see below)
-
-Email sender and receiver are both configured as `1441469055@qq.com`.
-
-## Filtering Strategy
-
-Keep `filter.method` set to `keyword` for production runs. TrendRadar's `ai` filter is an AI-only gate: if classification returns zero matches, it replaces the keyword result with an empty report and skips email delivery. Keyword filtering keeps the digest stable while DeepSeek still adds analysis and translation after the candidate set is selected.
-
-## Why The Daily Digest Stopped (2026-08-15)
-
-Symptom: 91 consecutive successful runs, then nothing for 43 days. No failed run in between — the workflow simply stopped being scheduled.
-
-Cause: GitHub automatically disables every `schedule`-triggered workflow once a repository has had **no activity for 60 days**. This repository's last push was `dcb6a43` on 2026-06-15. Sixty days later, on 2026-08-14, the counter expired; the last run (#91) went out on 08-15 and nothing fired afterwards. The workflow state now reads `disabled_inactivity`.
-
-### How to re-enable
-
-1. Actions tab → **Daily AI Product Radar** → **Enable workflow**.
-2. Or with the API: `PUT /repos/ava996/dailyinput/actions/workflows/282154964/enable`.
-3. Trigger one run manually with **Run workflow** to confirm the email still lands.
-
-### How it stays enabled now
-
-`.github/workflows/keepalive.yml` writes a timestamp into `.github/keepalive.txt` and commits it on the 1st and 15th of every month. That keeps the repository's activity window from ever reaching 60 days.
-
-The keepalive workflow is self-sustaining: as long as it keeps committing every half month, the 60-day window never closes. It is still a scheduled workflow, so if it ever lapses along with everything else, re-enable both together.
-
-Recommended: create a fine-grained PAT scoped to this repository only, with **Contents: Read and write**, and store it as the `KEEPALIVE_PAT` secret. Commits pushed with a PAT are unambiguously counted as repository activity; whether the default `GITHUB_TOKEN` counts is not documented.
+`.github/workflows/keepalive.yml` 沿用现有半月提交机制；可配置 `KEEPALIVE_PAT`。不改变既有 keepalive 工作流。

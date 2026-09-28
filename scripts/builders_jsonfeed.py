@@ -30,8 +30,9 @@ def parse_datetime(value: str | None) -> datetime | None:
     if not value:
         return None
     try:
-        return datetime.fromisoformat(value.replace("Z", "+00:00"))
-    except ValueError:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        return parsed.replace(tzinfo=timezone.utc) if parsed.tzinfo is None else parsed
+    except (ValueError, TypeError, AttributeError):
         return None
 
 
@@ -44,14 +45,13 @@ def compact(value: str | None, limit: int) -> str:
 
 def is_recent(value: str | None, cutoff: datetime) -> bool:
     published = parse_datetime(value)
-    return published is None or published >= cutoff
+    return published is not None and cutoff <= published <= datetime.now(timezone.utc) + timedelta(hours=1)
 
 
 def add_x_items(data: dict[str, Any], items: list[dict[str, Any]], cutoff: datetime) -> None:
     for builder in data.get("x", []):
         name = builder.get("name") or builder.get("handle") or "Builder"
         handle = builder.get("handle") or ""
-        bio = builder.get("bio") or ""
         for tweet in builder.get("tweets", []):
             created_at = tweet.get("createdAt")
             if not is_recent(created_at, cutoff):
@@ -70,7 +70,7 @@ def add_x_items(data: dict[str, Any], items: list[dict[str, Any]], cutoff: datet
                     "id": url,
                     "url": url,
                     "title": f"[X] {name}: {compact(text, 110)}",
-                    "content_text": f"{text}\n\n{metrics}\n\nProfile: {bio}",
+                    "content_text": f"{text}\n\n{metrics}",
                     "date_published": created_at,
                     "authors": [{"name": f"{name} (@{handle})" if handle else name}],
                     "tags": ["builders", "x"],

@@ -20,14 +20,8 @@ platforms:
     - id: "wallstreetcn-news"
       name: "华尔街见闻文章"
       expected_domain: "wallstreetcn.com"
-    - id: "cls-hot"
-      name: "财联社热门"
-      expected_domain: "cls.cn"
     - id: "cls-depth"
       name: "财联社深度"
-      expected_domain: "cls.cn"
-    - id: "cls-telegraph"
-      name: "财联社电报"
       expected_domain: "cls.cn"
 
 rss:
@@ -112,7 +106,7 @@ report:
   display_mode: "keyword"
   sort_by_position_first: true
   rank_threshold: 5
-  max_news_per_keyword: 3
+  max_news_per_keyword: 0  # Shared limits apply only after API/RSS merging.
 
 filter:
   method: "keyword"
@@ -130,12 +124,11 @@ ai_filter:
 display:
   region_order:
     - hotlist
-    - rss
     - ai_analysis
   regions:
     hotlist: true
     new_items: false
-    rss: true
+    rss: true  # Required for ingestion; items merge before rendering.
     standalone: false
     ai_analysis: true
   standalone:
@@ -209,8 +202,8 @@ ai_analysis:
   language: "Chinese"
   prompt_file: "ai_analysis_prompt.txt"
   mode: "current"
-  max_news_for_analysis: 40
-  include_rss: true
+  max_news_for_analysis: 22
+  include_rss: false  # Already included in the unified stats.
   include_standalone: false
   include_rank_timeline: false
 
@@ -219,8 +212,8 @@ ai_translation:
   language: "中文"
   prompt_file: "ai_translation_prompt.txt"
   scope:
-    hotlist: false
-    rss: true
+    hotlist: true  # Translate English titles in the unified list.
+    rss: false
     standalone: false
 
 advanced:
