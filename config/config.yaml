@@ -87,6 +87,34 @@ rss:
       url: "https://www.infoq.cn/feed"
       max_age_days: 3
 
+    # ---- 中文媒体：替代已停用的 wewe-rss 公众号源 ----
+    # 原来那批公众号走自建 wewe-rss（Railway 实例已删除），改用各家官网 RSS。
+    # 公众号里「人人都是产品经理」「量子位」上面已有官网 RSS，不重复配置。
+    - id: "36kr"
+      name: "36氪"
+      url: "https://www.36kr.com/feed"
+      # 日期格式是 "2026-09-28 15:28:22  +0800"，非 RFC 2822，但 feedparser 能解析。
+      max_age_days: 2
+    - id: "geekpark"
+      name: "极客公园"
+      url: "https://www.geekpark.net/rss"
+      max_age_days: 3
+    - id: "aiera"
+      name: "新智元"
+      url: "https://www.aiera.com.cn/feed"
+      max_age_days: 3
+    - id: "huxiu"
+      name: "虎嗅"
+      # 虎嗅官网 RSS（huxiu.com/rss/0.xml）已返回 403，改走 RSSHub 公共镜像。
+      # 镜像属第三方，若某天失败只剩这一路，换 rsshub.app/huxiu/article 即可。
+      url: "https://rsshub.rssforever.com/huxiu/article"
+      max_age_days: 3
+    - id: "growthbox"
+      name: "增长黑盒"
+      url: "https://www.growthbox.net/feed"
+      # 双月更，窗口必须开大，否则整栏为空。
+      max_age_days: 60
+
     # ---- 英文一手源 ----
     - id: "techcrunch-ai"
       name: "TechCrunch AI"

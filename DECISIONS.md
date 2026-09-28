@@ -18,3 +18,14 @@
 - **移除 `求职与职业机会`。** 含招聘/岗位/面试/简历/实习/裁员/hiring/layoffs 信号的标题直接丢弃，**不改派**到其他主题，避免岗位贴污染 AI 与产品栏。
 - **来源时间窗按各自频率单独校准。** `anthropic` 5→14 天，`openai-alignment` 14→45 天，`openai-research` 14→21 天，`google-ai` 5→10 天。
 - **原因**：这两个源并非抓取失败，而是窗口比实际更新频率还短。运行日志显示 `Anthropic News` 抓到 30 条、`OpenAI Alignment` 抓到 27 条，但新鲜度过滤后各剩 0 条——最新一篇分别是 5.4 天前和 22.4 天前。**低频源用统一窗口会整栏永久为空。**
+
+## 2026-09-28（傍晚）：用官网 RSS 补回 5 个已停用的公众号源
+
+- **背景**：用户指出「RSS 里还有十几个公众号」。查证后确认那 16 个公众号属于 wewe-rss 时代（`digest.py`），在 2026-05-25 `Replace wewe-rss digest with TrendRadar` 时随脚本一起被删除，**从未进入过 `config.yaml`**；原 Railway 实例已删除，旧 `MP_WXS_*` id 全部作废。
+- **决策：不重建公众号抓取，改找各家官网 RSS。** 逐一实测 16 个公众号对应的发布方，找回 5 个（其余 11 个只有公众号，无可用官网或第三方 RSS）。
+- **新增源**：`36kr`（`www.36kr.com/feed`）、`geekpark`（`www.geekpark.net/rss`）、`aiera`（`www.aiera.com.cn/feed`）、`huxiu`、`growthbox`（`www.growthbox.net/feed`）。
+- **虎嗅走 RSSHub 公共镜像**（`rsshub.rssforever.com/huxiu/article`）：官网 `huxiu.com/rss/0.xml` 已返回 403 / 000，官方 `rsshub.app` 本地不通。镜像属第三方，失败时换 `rsshub.app/huxiu/article`。
+- **36氪的日期格式非标准**（`2026-09-28 15:28:22  +0800`），实测 `feedparser` 30/30 全部解析成功，TrendRadar 的 `_parse_date` 优先用 `published_parsed`，因此可用——不需要改代码，但这是必须验证过才敢加的类型。
+- **增长黑盒是双月更**，窗口设 60 天，否则整栏为空。
+- **不加的**：IT之家、钛媒体、少数派实测也可用，但不在用户原始公众号清单里，不擅自扩大阅读面。AI 中文聚合源 `aihot.virxact.com/feed/all.xml` 同理，留作备选。
+- **影响实测**（用 run#100 真实候选池 + 新源，按 TrendRadar 真实的新鲜度排名重算）：候选 242 → 314，精选仍是 22 条；36氪进 2 条、极客公园 1 条、虎嗅 1 条，`产品思考` 由 2 条升到 3 条。**新增来源不会撑大日报，只改变主题内的来源构成。**

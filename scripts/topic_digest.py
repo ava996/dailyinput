@@ -114,6 +114,8 @@ _SOURCE_NAMES = {
     "Anthropic News": "anthropic", "Anthropic Research": "anthropic-research", "Google AI Blog": "google-ai",
     "人人都是产品经理": "woshipm", "Lenny's Newsletter": "lennys-newsletter",
     "AI Builders": "builders", "Latent Space": "latent-space", "Product Hunt": "product-hunt",
+    "36氪": "36kr", "极客公园": "geekpark", "新智元": "aiera",
+    "虎嗅": "huxiu", "增长黑盒": "growthbox",
 }
 
 

@@ -35,10 +35,19 @@
 - AI：OpenAI News/Research/Alignment、Anthropic News/Research、Google AI、量子位、TechCrunch AI、Latent Space。
 - 产品与实践：人人都是产品经理、Lenny’s Newsletter、Product Hunt、AI Builders；知乎、GitHub Trending、InfoQ 中文、Hacker News 提供补充候选，必须通过主题规则。
 - 宏观金融：华尔街见闻文章、财联社深度。移除财联社热门和电报，减少重复快讯与市场噪声。
+- 中文媒体（替代已停用的公众号）：36氪、极客公园、新智元、虎嗅、增长黑盒。
+
+### 关于那批公众号
+
+2026-05-25 之前，日报用自建 **wewe-rss** 把 16 个公众号转成 RSS（脚本 `digest.py`）。换成 TrendRadar 时那段脚本被整体删除，公众号列表从未进入 `config.yaml`；原 wewe-rss 的 Railway 实例现已删除（`Application not found`），旧 feed id 全部作废。
+
+大部分公众号至今没有可用的官网 RSS，只有 5 个找到了替代并已配回：**36氪、极客公园、新智元、虎嗅、增长黑盒**（其中虎嗅官网 RSS 已 403，走 RSSHub 公共镜像）。另有 2 个（人人都是产品经理、量子位）本来就有官网 RSS，早就在跑。
+
+仍未覆盖：晚点LatePost、腾讯研究院、机器之心、运营研究社、电商派Pro、乱翻书、野生运营社区、PyTorch研习社、特工宇宙、一天一篇经济学人 —— 这些只有公众号，没有可用的官网或第三方 RSS。要覆盖它们，只能重新自建公众号转 RSS 服务（如 `cooderl/wewe-rss`）。
 
 OpenAI/Anthropic 的部分分栏来自第三方 `0xSMW/rss-feeds` 镜像，原文章链接仍指向发布网站。Builders 来自 `zarazhangrui/follow-builders`，在 Actions 中转换为本地 JSON Feed。
 
-来源时间窗按各源的**实际更新频率**单独设定，不能一刀切：快讯类 2–5 天，周更 10 天，研究分栏 14–21 天，对齐研究 45 天。窗口定得太短会让低频源**整栏永久为空**——这不是抓取失败，`Anthropic News` 和 `OpenAI Alignment` 就曾分别因为 5 天 / 14 天窗口而一条都留不下来。Builders 仅接受有效且近期的发布时间，缺失、无效或明显未来日期不当作新内容；作者简介不参与内容。
+来源时间窗按各源的**实际更新频率**单独设定，不能一刀切：快讯类 2–5 天，周更 10 天，研究分栏 14–21 天，对齐研究 45 天，双月刊 60 天。窗口定得太短会让低频源**整栏永久为空**——这不是抓取失败，`Anthropic News` 和 `OpenAI Alignment` 就曾分别因为 5 天 / 14 天窗口而一条都留不下来。Builders 仅接受有效且近期的发布时间，缺失、无效或明显未来日期不当作新内容；作者简介不参与内容。
 
 ## 筛选与展示实现
 
