@@ -7,16 +7,31 @@ from collections import defaultdict
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 
-TOPIC_LIMITS = {
-    "AI 模型与 Agent": 4,
-    "AI 工具与效率": 3,
-    "产品思考": 4,
-    "内容平台": 2,
-    "电商与本地生活": 2,
-    "宏观政策与传导": 3,
-    "金融与投资": 2,
-    "求职与职业机会": 2,
-}
+# One shared ceiling for the whole digest. Per-topic counts are derived from how
+# much usable material each topic actually has that day, not from a fixed table.
+TOTAL_LIMIT = 22
+
+# Display order. Only topics that clear their own classification rule appear.
+TOPIC_ORDER = (
+    "AI 模型与工具",
+    "产品思考",
+    "内容平台",
+    "电商与本地生活",
+    "宏观政策与传导",
+    "金融与投资",
+)
+
+# A topic with any usable material keeps at least one slot, so a quiet day never
+# blanks a whole section while another topic overflows.
+MIN_PER_TOPIC = 1
+
+# No single source may take more than this share of a topic, keeping a prolific
+# feed from crowding out every other source in it.
+MAX_PER_SOURCE = 2
+
+# Weight one source can contribute at most, in items. Damping by item count
+# stops a feed that dumps 50 entries from buying the whole digest.
+SOURCE_DAMPING = 3
 
 
 def _pattern(expression: str) -> re.Pattern[str]:
@@ -39,11 +54,6 @@ _FINANCE = _pattern(
     r"\b(?:fintech|IPO|earnings|revenue|stocks?|bonds?|equities|dividends?|"
     r"valuation|stock market|investment|banking|financial results)\b"
 )
-_CAREER = _pattern(
-    r"校招|社招|招聘|岗位|面试|简历|实习|秋招|春招|裁员|组织调整|薪酬|求职|职业发展|"
-    r"转行|晋升|\b(?:hiring|recruitment|job openings?|job search|job interviews?|"
-    r"career|careers|resume|internships?|layoffs?|headcount|salar(?:y|ies))\b"
-)
 _ECOMMERCE = _pattern(
     r"电商|淘宝|天猫|京东|拼多多|美团|饿了么|即时零售|本地生活|外卖|到店|团购|"
     r"直播带货|跨境电商|亚马逊|\b(?:PDD|Temu|Shein|e-commerce|ecommerce|"
@@ -65,27 +75,36 @@ _PRODUCT = _pattern(
     r"pricing experiments?|finding (?:your )?first users|jobs[- ]to[- ]be[- ]done|PMF|JTBD|UX|design systems?)\b|"
     r"\bA\s*[/ -]\s*B\s*(?:test(?:ing|s)?|实验|测试)"
 )
-_AI_TOOLS = _pattern(
-    r"AI\s*(?:[+＋]|工具|产品|应用|效率|办公|编程|笔记|搜索|工作流|自动化)|知识管理|效率工具|"
-    r"提示词|上下文工程|\b(?:Claude Code|Codex|Cursor|Copilot|Replit|Windsurf|Warp|Notion|Obsidian|Figma|"
+# Models, agents and the tooling built on them share one topic. Splitting them
+# before let one broad "AI" regex fill a bucket of four while the other sat nearly
+# empty, which is what starved most RSS entries.
+_AI = _pattern(
+    r"人工智能|大模型|语言模型|世界模型|智能体|多模态|推理模型|模型评测|工具调用|"
+    r"视频生成|语音模型|月之暗面|智谱|通义|豆包|元宝|"
+    r"AI\s*(?:[+＋]|工具|产品|应用|效率|办公|编程|笔记|搜索|工作流|自动化)|"
+    r"知识管理|效率工具|提示词|上下文工程|"
+    r"\b(?:AI|AIGC|LLMs?|Agent(?:s|ic)?|OpenAI|ChatGPT|GPT[- ]?\d\w*|Claude|Anthropic|"
+    r"Gemini|DeepSeek|Qwen|Kimi|MiniMax|GLM|Sora|Manus|Coze|Dify|RAG|MCP|"
+    r"Claude Code|Codex|Cursor|Copilot|Replit|Windsurf|Warp|Notion|Obsidian|"
+    r"artificial intelligence|language models?|foundation models?|"
     r"AI tools?|AI workflows?|AI productivity|AI coding|coding assistants?|"
     r"prompt engineering|context engineering|knowledge management)\b"
-)
-_AI_MODELS = _pattern(
-    r"人工智能|大模型|语言模型|世界模型|智能体|多模态|推理模型|模型评测|工具调用|"
-    r"视频生成|语音模型|月之暗面|智谱|通义|豆包|元宝|\b(?:AI|AIGC|LLMs?|"
-    r"Agent(?:s|ic)?|OpenAI|ChatGPT|GPT[- ]?\d\w*|Claude|Anthropic|Gemini|DeepSeek|"
-    r"Qwen|Kimi|MiniMax|GLM|Sora|Manus|Coze|Dify|RAG|MCP|"
-    r"artificial intelligence|language models?|foundation models?)\b"
 )
 _AI_NAMES = _pattern(
     r"(?<![a-z])(?:OpenAI|ChatGPT|Claude|Anthropic|Gemini|DeepSeek|Qwen|Kimi|MiniMax|GLM|Sora|RAG|MCP)(?![a-z])"
 )
 _NOISE = _pattern(r"明星|八卦|塌房|比分|赛果|光刻机|芯片制程|显卡评测|跑分对比|折叠屏|火箭发射|卫星发射|限时优惠|优惠券|抽奖|带货链接")
+# Career content no longer has its own section, so it is excluded outright
+# instead of being left to spill into the AI and product sections.
+_CAREER = _pattern(
+    r"校招|社招|招聘|岗位|面试|简历|秋招|春招|求职|职业发展|转行|晋升|"
+    r"裁员|组织调整|人力资源|离职|入职|薪酬|薪资|offer|内推|"
+    r"\b(?:hiring|recruitment|job openings?|job search|job interviews?|job market|open roles?|"
+    r"career|careers|resume|internships?|layoffs?|headcount|salar(?:y|ies))\b"
+)
 _OFFICIAL_AI = {"openai", "openai-research", "openai-alignment", "anthropic", "anthropic-research", "google-ai"}
 _PRODUCT_SOURCES = {"woshipm", "lennys-newsletter"}
 _PRODUCT_CONTEXT = _pattern(r"\b(?:discovery|product chief|product advice|evals?|AI failures in your product)\b")
-_CAREER_ACTION = _pattern(r"招聘|求职|面试|校招|实习|裁员|\b(?:hiring|recruitment|job|resume|layoffs?|internships?)\b")
 _OFFICIAL_NOISE = _pattern(r"周年|\b(?:anniversary|celebrating|two years of|our team|our office)\b")
 _BUILDER_SIGNAL = _pattern(r"发布|工具|工作流|实践|开发|搭建|自动化|评测|提示词|\b(?:launch|releases?|workflows?|how to|built|build|ships?|coding|prompts?|tools?|evals?)\b")
 _SOURCE_NAMES = {
@@ -119,29 +138,30 @@ def classify_article(title: str, source_id: str) -> str | None:
             return "金融与投资"
         return None
 
-    # Product newsletters combine several topics in one headline; a trailing
-    # career mention should not swallow an explicit methodology item.
-    if source_id in _PRODUCT_SOURCES and not _CAREER_ACTION.search(title):
+    # Product newsletters combine several topics in one headline; an explicit
+    # methodology item wins over an incidental career mention.
+    if source_id in _PRODUCT_SOURCES:
         if _PRODUCT.search(title) or _PRODUCT_CONTEXT.search(title):
             return "产品思考"
 
+    if _CAREER.search(title):
+        return None
+
     for topic, pattern in (
-        ("求职与职业机会", _CAREER),
         ("宏观政策与传导", _MACRO),
         ("金融与投资", _FINANCE),
         ("电商与本地生活", _ECOMMERCE),
         ("内容平台", _CONTENT),
         ("产品思考", _PRODUCT),
-        ("AI 工具与效率", _AI_TOOLS),
-        ("AI 模型与 Agent", _AI_MODELS),
+        ("AI 模型与工具", _AI),
     ):
         if pattern.search(title):
             return topic
     if _AI_NAMES.search(title):
-        return "AI 模型与 Agent"
+        return "AI 模型与工具"
     # Official model/research announcements often omit the company or AI in their title.
     if source_id in _OFFICIAL_AI and _pattern(r"introducing|launch|model|reasoning|research|alignment|safety|发布|模型|研究|推理").search(title):
-        return "AI 模型与 Agent"
+        return "AI 模型与工具"
     return None
 
 
@@ -152,6 +172,56 @@ def canonical_url(url: str) -> str:
              if not k.lower().startswith("utm_") and k.lower() not in {"fbclid", "gclid", "spm"}]
     return urlunsplit((parts.scheme.lower(), parts.netloc.lower().removeprefix("www."),
                        parts.path.rstrip("/"), urlencode(sorted(query)), ""))
+
+
+def allocate_topic_budgets(supply: dict[str, tuple[int, int]],
+                           total_limit: int = TOTAL_LIMIT) -> dict[str, int]:
+    """Share one ceiling across topics according to what each topic actually has.
+
+    ``supply`` maps topic -> (usable items, distinct sources). Weighting by
+    ``min(items, SOURCE_DAMPING * sources)`` stops one high-volume feed from
+    buying the whole digest, and the largest-remainder step keeps thin topics
+    alive. Returns only the topics that earned at least one slot.
+    """
+    topics = [topic for topic in TOPIC_ORDER if supply.get(topic, (0, 0))[0] > 0]
+    if not topics:
+        return {}
+
+    cap = min(total_limit, sum(supply[topic][0] for topic in topics))
+    budget = dict.fromkeys(topics, 0)
+    if MIN_PER_TOPIC * len(topics) <= cap:
+        for topic in topics:
+            budget[topic] = MIN_PER_TOPIC
+
+    demand = {topic: min(supply[topic][0], SOURCE_DAMPING * supply[topic][1]) for topic in topics}
+
+    for _ in range(len(topics) + 1):
+        remaining = cap - sum(budget.values())
+        if remaining <= 0:
+            break
+        pool = [topic for topic in topics
+                if supply[topic][0] > budget[topic] and demand[topic] > 0]
+        if not pool:
+            break
+        weight = sum(demand[topic] for topic in pool)
+        share = {topic: remaining * demand[topic] / weight for topic in pool}
+        add = {topic: min(int(share[topic]), supply[topic][0] - budget[topic]) for topic in pool}
+        left = remaining - sum(add.values())
+        # Hand out the rounding leftovers by largest fractional part first.
+        for topic in sorted(pool, key=lambda t: share[t] - int(share[t]), reverse=True):
+            if left <= 0:
+                break
+            room = supply[topic][0] - budget[topic] - add[topic]
+            if room > 0:
+                give = min(left, room)
+                add[topic] += give
+                left -= give
+        if not any(add.values()):
+            break
+        for topic, count in add.items():
+            budget[topic] += count
+
+    return {topic: count for topic, count in budget.items() if count > 0}
 
 
 def build_topic_stats(hotlist_stats: list[dict] | None, rss_stats: list[dict] | None) -> list[dict]:
@@ -191,19 +261,32 @@ def build_topic_stats(hotlist_stats: list[dict] | None, rss_stats: list[dict] | 
         seen_titles.add(title_key)
         buckets[item["topic"]][item["source_id"]].append(item)
 
+    supply = {}
+    for topic in TOPIC_ORDER:
+        by_source = buckets.get(topic) or {}
+        supply[topic] = (sum(len(items) for items in by_source.values()), len(by_source))
+    budget = allocate_topic_budgets(supply)
+
     stats = []
-    for position, (topic, limit) in enumerate(TOPIC_LIMITS.items()):
-        sources = buckets[topic]
+    for topic in TOPIC_ORDER:
+        limit = budget.get(topic, 0)
+        by_source = buckets.get(topic) or {}
+        if limit <= 0 or not by_source:
+            continue
+        # Every source takes one turn before any source is used a second time, so
+        # the section reads across sources instead of doubling up on one.
+        rounds = max(MAX_PER_SOURCE, -(-limit // len(by_source)))
         selected = []
-        # Give each source one turn before using its second slot.
-        for round_index in range(2):
-            for items in sources.values():
-                if len(items) > round_index and len(selected) < limit:
+        for round_index in range(rounds):
+            for items in by_source.values():
+                if len(selected) >= limit:
+                    break
+                if len(items) > round_index:
                     item = items[round_index]
                     if item["channel"] == "rss":
                         item["ranks"] = []  # Feed recency is not a hotlist ranking.
                     selected.append(item)
         if selected:
-            stats.append({"word": topic, "count": len(selected), "position": position,
+            stats.append({"word": topic, "count": len(selected), "position": len(stats),
                           "titles": selected, "percentage": 0})
     return stats
