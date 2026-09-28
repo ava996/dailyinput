@@ -17,8 +17,8 @@ platforms:
       name: "GitHub Trending"
       expected_domain: "github.com"
     # ---- 金融 / 宏观 / 政策（带解读）----
-    - id: "wallstreetcn-hot"
-      name: "华尔街见闻"
+    - id: "wallstreetcn-news"
+      name: "华尔街见闻文章"
       expected_domain: "wallstreetcn.com"
     - id: "cls-hot"
       name: "财联社热门"
@@ -26,9 +26,9 @@ platforms:
     - id: "cls-depth"
       name: "财联社深度"
       expected_domain: "cls.cn"
-    - id: "fastbull-news"
-      name: "法布财经解读"
-      expected_domain: "fastbull.com"
+    - id: "cls-telegraph"
+      name: "财联社电报"
+      expected_domain: "cls.cn"
 
 rss:
   enabled: true

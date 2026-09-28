@@ -24,14 +24,22 @@ TrendRadar directly reads hotlist platforms and RSS feeds. Builders data is gene
 |---|---|---|
 | `zhihu` | 知乎 | 互联网 / 产品讨论 |
 | `github-trending-today` | GitHub Trending | 开源与 AI 工具风向 |
-| `wallstreetcn-hot` | 华尔街见闻 | 金融宏观 |
-| `cls-hot` | 财联社热门 | 投资快讯 |
-| `cls-depth` | 财联社深度 | 深度报道 |
-| `fastbull-news` | 法布财经解读 | 财经分析方法论 |
+| `wallstreetcn-news` | 华尔街见闻文章 | 宏观与市场分析文章流 |
+| `cls-hot` | 财联社热门 | 当日热点 |
+| `cls-depth` | 财联社深度 | 深度分析与解读 |
+| `cls-telegraph` | 财联社电报 | 快讯 + 券商机构观点 |
 
-`fastbull-news` is the useful one for understanding rather than just knowing: its items are explainers such as "股票回购如何影响每股收益：增厚不等于创造价值", "债券到期收益率不等于实际年化回报", "DV01怎么算？把债券久期换成每个基点的盈亏". Note its links live on `fastbull.com`, not `.cn` — `expected_domain` must match or TrendRadar silently discards the whole platform.
+The finance and policy slots deliberately favour sources that carry **analysis**, not wire copy or ranking lists:
 
-Removed: `36kr-renqi` and `36kr` (the upstream NewsNow API answers `Invalid source id` for both), plus `sspai` and `jin10` (cut for volume; Jin10 overlapped with Wallstreetcn and CLS).
+- `wallstreetcn-news` is the article stream (not the `-hot` ranking). Sample titles: "高盛警告：美股广度创2000年互联网泡沫来最差，债波动率罕见背离", "动力煤重回千元！最差的盈利环境，为什么可能对应火电最好的拐点？"
+- `cls-depth` runs explainers: "特朗普为何反对'AI减速'？", "AI狂欢尚未结束？真正的危险时刻，将是这个词'火了'后……"
+- `cls-telegraph` adds sell-side views on policy transmission: "摩根大通：预计泰国央行明年将加息三次", "花旗银行分析师表示，过去一个月美债短端利率重新定价幅度达到90年代以来高位".
+
+Note their links live on `wallstreetcn.com` and `cls.cn`; `expected_domain` must match or TrendRadar silently discards the whole platform.
+
+Tried and rejected: `fastbull-news`. It carries mechanical explainers ("DV01怎么算？") rather than macro transmission analysis, which is not what this digest is for.
+
+Removed: `36kr-renqi` and `36kr` (the upstream NewsNow API answers `Invalid source id` for both), plus `sspai`, `jin10` and `wallstreetcn-hot` (volume, and `wallstreetcn-news` supersedes the ranking view).
 
 ### RSS feeds (`config.yaml` → `rss.feeds`)
 
@@ -76,19 +84,22 @@ Current caps, chosen so the whole digest lands at 15–20 items:
 
 | Group | `@N` |
 |---|---|
-| 求职与职业机会 | 3 |
-| 金融银行与宏观投资 | 4 |
-| 电商与本地生活 | 2 |
-| 内容平台 | 2 |
+| 求职与职业机会 | 2 |
+| 宏观政策与传导 | 3 |
+| 金融与投资 | 2 |
+| 电商与本地生活 | 1 |
+| 内容平台 | 1 |
 | 产品思考 | 2 |
-| AI 工具与效率 | 2 |
-| AI 模型与 Agent (catch-all, last) | 4 |
+| AI 工具与效率 | 1 |
+| AI 模型与 Agent (catch-all, last) | 3 |
+
+`宏观政策与传导` sits second in the list on purpose. Because the first matching group wins, placing it ahead of `金融与投资` means a story like "央行降准利好银行股" is filed as macro policy rather than as a stock item, and it gets its own dedicated slots instead of competing with individual-stock chatter.
 
 **Do not size the digest from the Actions log.** The log line `[推送] 准备发送：热榜 N 条 + RSS M 条` mixes two different counters: the hotlist number is `sum(len(stat["titles"]))`, which is already capped, while the RSS number is `sum(stat["count"])`, which is the raw pre-cap match count. The RSS figure is therefore inflated several-fold — a run reporting "RSS 38 条" renders about 10 entries.
 
 To check the real volume without sending an email every time, replicate the matching locally: filter each feed by its `max_age_days`, apply `[GLOBAL_FILTER]`, assign each title to its first matching group, then apply the `@N` caps. Cross-check the hotlist figure against the log, which is accurate on that side.
 
-Measured with that method on 2026-09-27: **18 items** (8 hotlist + 10 RSS).
+Measured with that method on 2026-09-28: **20 items** (11 hotlist + 9 RSS).
 
 ## Required GitHub Secrets
 
