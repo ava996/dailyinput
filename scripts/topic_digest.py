@@ -57,17 +57,17 @@ _PRODUCT = _pattern(
     r"产品设计|产品思维|产品体验|需求分析|需求验证|用户需求|产品发现|功能设计|用户体验|"
     r"用户增长|用户激活|用户留存|用户转化|留存率|转化率|用户研究|用户访谈|用户画像|"
     r"可用性测试|可用性研究|增长实验|定价实验|推荐算法|搜索体验|交互设计|原型设计|"
-    r"竞品分析|产品策略|产品战略|产品路线图|产品市场匹配|获客成本|复购率|"
+    r"竞品分析|产品策略|产品战略|产品路线图|产品市场匹配|产品复盘|需求洞察|产品增长|产品定价|信息架构|获客成本|复购率|"
     r"\b(?:product discovery|product design|product strategy|product thinking|"
-    r"product management|product analytics|product-market fit|user research|"
+    r"product management|product analytics|product advice|product leadership|product teams?|product-market fit|user research|"
     r"user interviews?|user experience|customer discovery|customer interviews?|"
     r"usability|retention|activation|onboarding|conversion rates?|growth experiments?|"
-    r"pricing experiments?|jobs[- ]to[- ]be[- ]done|PMF|JTBD)\b|"
+    r"pricing experiments?|finding (?:your )?first users|jobs[- ]to[- ]be[- ]done|PMF|JTBD|UX|design systems?)\b|"
     r"\bA\s*[/ -]\s*B\s*(?:test(?:ing|s)?|实验|测试)"
 )
 _AI_TOOLS = _pattern(
-    r"AI\s*(?:工具|效率|办公|编程|笔记|搜索|工作流|自动化)|知识管理|效率工具|"
-    r"提示词|上下文工程|\b(?:Claude Code|Codex|Cursor|Copilot|Notion|Obsidian|Figma|"
+    r"AI\s*(?:[+＋]|工具|产品|应用|效率|办公|编程|笔记|搜索|工作流|自动化)|知识管理|效率工具|"
+    r"提示词|上下文工程|\b(?:Claude Code|Codex|Cursor|Copilot|Replit|Windsurf|Warp|Notion|Obsidian|Figma|"
     r"AI tools?|AI workflows?|AI productivity|AI coding|coding assistants?|"
     r"prompt engineering|context engineering|knowledge management)\b"
 )
@@ -84,6 +84,10 @@ _AI_NAMES = _pattern(
 _NOISE = _pattern(r"明星|八卦|塌房|比分|赛果|光刻机|芯片制程|显卡评测|跑分对比|折叠屏|火箭发射|卫星发射|限时优惠|优惠券|抽奖|带货链接")
 _OFFICIAL_AI = {"openai", "openai-research", "openai-alignment", "anthropic", "anthropic-research", "google-ai"}
 _PRODUCT_SOURCES = {"woshipm", "lennys-newsletter"}
+_PRODUCT_CONTEXT = _pattern(r"\b(?:discovery|product chief|product advice|evals?|AI failures in your product)\b")
+_CAREER_ACTION = _pattern(r"招聘|求职|面试|校招|实习|裁员|\b(?:hiring|recruitment|job|resume|layoffs?|internships?)\b")
+_OFFICIAL_NOISE = _pattern(r"周年|\b(?:anniversary|celebrating|two years of|our team|our office)\b")
+_BUILDER_SIGNAL = _pattern(r"发布|工具|工作流|实践|开发|搭建|自动化|评测|提示词|\b(?:launch|releases?|workflows?|how to|built|build|ships?|coding|prompts?|tools?|evals?)\b")
 _SOURCE_NAMES = {
     "华尔街见闻文章": "wallstreetcn-news", "华尔街见闻": "wallstreetcn-news",
     "财联社热门": "cls-hot", "财联社深度": "cls-depth", "财联社电报": "cls-telegraph",
@@ -100,7 +104,11 @@ def classify_article(title: str, source_id: str) -> str | None:
     source_id = (source_id or "").casefold()
     if source_id == "builders":
         title = re.sub(r"^\[(?:X|Blog|Podcast)\]\s*[^:]+:\s*", "", title)
+        if not (_BUILDER_SIGNAL.search(title) or _PRODUCT.search(title)):
+            return None
     if not title or _NOISE.search(title):
+        return None
+    if source_id in _OFFICIAL_AI and _OFFICIAL_NOISE.search(title):
         return None
 
     # Financial wires cannot consume the limited product and AI reading slots.
@@ -110,6 +118,12 @@ def classify_article(title: str, source_id: str) -> str | None:
         if _FINANCE.search(title):
             return "金融与投资"
         return None
+
+    # Product newsletters combine several topics in one headline; a trailing
+    # career mention should not swallow an explicit methodology item.
+    if source_id in _PRODUCT_SOURCES and not _CAREER_ACTION.search(title):
+        if _PRODUCT.search(title) or _PRODUCT_CONTEXT.search(title):
+            return "产品思考"
 
     for topic, pattern in (
         ("求职与职业机会", _CAREER),
@@ -185,7 +199,10 @@ def build_topic_stats(hotlist_stats: list[dict] | None, rss_stats: list[dict] | 
         for round_index in range(2):
             for items in sources.values():
                 if len(items) > round_index and len(selected) < limit:
-                    selected.append(items[round_index])
+                    item = items[round_index]
+                    if item["channel"] == "rss":
+                        item["ranks"] = []  # Feed recency is not a hotlist ranking.
+                    selected.append(item)
         if selected:
             stats.append({"word": topic, "count": len(selected), "position": position,
                           "titles": selected, "percentage": 0})

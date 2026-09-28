@@ -61,12 +61,24 @@ class ClassifyArticleTests(unittest.TestCase):
         self.assertEqual(list(TOPIC_LIMITS.values()), [4, 3, 4, 2, 2, 3, 2, 2])
         self.assertEqual(sum(TOPIC_LIMITS.values()), 22)
 
+    def test_real_preview_product_misses_and_official_noise(self):
+        for title in (
+            "90 minutes of unfiltered product advice from Snap and Discord’s product chief",
+            "Community Wisdom: AI doomerism, speeding up discovery in a big org, and more",
+            "Finding your first users before the product exists, and early years of your career",
+            "Advanced evals: How to find hidden AI failures in your product",
+        ):
+            self.assertEqual(classify_article(title, "lennys-newsletter"), "产品思考")
+        self.assertIsNone(classify_article("Two years of OpenAI Academy", "openai"))
+        self.assertEqual(classify_article("AI+经营分析：从0到1搭建经营分析体系", "woshipm"), "AI 工具与效率")
+
     def test_source_and_cjk_boundaries(self):
         self.assertEqual(classify_article("OpenAI发布全新模型", "openai"), "AI 模型与 Agent")
-        self.assertEqual(classify_article("Codex新增代码审查功能", "builders"), "AI 工具与效率")
-        self.assertEqual(classify_article("AI应用的多模态新进展", "qbitai"), "AI 模型与 Agent")
+        self.assertEqual(classify_article("Codex新增代码审查功能", "openai"), "AI 工具与效率")
+        self.assertEqual(classify_article("AI应用的多模态新进展", "qbitai"), "AI 工具与效率")
         self.assertEqual(classify_article("Introducing our latest reasoning system", "openai"), "AI 模型与 Agent")
         self.assertIsNone(classify_article("[X] OpenAI: 周末跑步愉快", "builders"))
+        self.assertIsNone(classify_article("[X] Someone: Cool to see Replit being popular at a celebrity household!", "builders"))
 
 
 def article(title, source="zhihu", url=None):

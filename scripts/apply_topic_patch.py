@@ -15,6 +15,7 @@ PIPELINE = '''        # dailyinput: merge channels before analysis, translation 
                       for item in group.get("titles", [])]
         stats = build_topic_stats(stats, rss_items)
         rss_items, rss_new_items = None, None
+        new_titles = {}  # Avoid translating an invisible second copy of API titles.
         total_titles = len(candidates)
         id_to_name = dict(id_to_name or {})
         for group in stats:
@@ -60,6 +61,11 @@ def apply_patch(root: Path) -> None:
     analyzer_path = root / "trendradar/core/analyzer.py"
     html_path = root / "trendradar/report/html.py"
     main = main_path.read_text(encoding="utf-8")
+    marker = "        # dailyinput: merge channels before analysis, translation and rendering.\n"
+    if marker in main:
+        start = main.index(marker)
+        end = main.index("        self._hotlist_total_count = total_titles\n", start)
+        main = main[:start] + main[end:]
     main = replace_once(main, "        self._hotlist_total_count = total_titles\n",
                         PIPELINE + "        self._hotlist_total_count = total_titles\n", "pipeline")
 

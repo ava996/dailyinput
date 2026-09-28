@@ -69,7 +69,7 @@ def add_x_items(data: dict[str, Any], items: list[dict[str, Any]], cutoff: datet
                 {
                     "id": url,
                     "url": url,
-                    "title": f"[X] {name}: {compact(text, 110)}",
+                    "title": f"[X] {name}: {compact(text, 220)}",
                     "content_text": f"{text}\n\n{metrics}",
                     "date_published": created_at,
                     "authors": [{"name": f"{name} (@{handle})" if handle else name}],

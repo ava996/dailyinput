@@ -17,7 +17,7 @@ on:
       - '.github/workflows/daily-digest.yml'
 
 concurrency:
-  group: daily-ai-product-radar-${{ github.ref_name }}
+  group: daily-ai-product-radar-${{ github.ref_name }}-${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.send_email) }}
   cancel-in-progress: true
 
 permissions:
@@ -47,6 +47,7 @@ jobs:
           cp dailyinput/config/frequency_words.txt TrendRadar/config/frequency_words.txt
           cp dailyinput/config/ai_interests.txt TrendRadar/config/ai_interests.txt
           cp dailyinput/config/ai_analysis_prompt.txt TrendRadar/config/ai_analysis_prompt.txt
+          cp dailyinput/config/ai_translation_prompt.txt TrendRadar/config/ai_translation_prompt.txt
           python dailyinput/scripts/apply_topic_patch.py TrendRadar
 
       - name: Set up Python
